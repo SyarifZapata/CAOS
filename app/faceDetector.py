@@ -8,7 +8,11 @@ import numpy as np
 
 GPIO.setmode(GPIO.BCM)
 LEDPin = 22
+LEDPinRot = 17
+motionDetector = 21
 GPIO.setup(LEDPin, GPIO.OUT)
+GPIO.setup(LEDPinRot, GPIO.OUT)
+GPIO.setup(motionDetector, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
 
 camera = PiCamera()
 camera.resolution = (640,480)
@@ -24,41 +28,56 @@ fontScale = 1
 fontColor = (255, 255, 255)
 ledCounter = 0
 
-for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-    img = frame.array
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = faceDetect.detectMultiScale(gray, 1.3, 5)
-    
-    if (ledCounter > 10):
-        GPIO.output(LEDPin, False)
-    
-    for (x,y,w,h) in faces:
-        cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
-        id, conf = rec.predict(gray[y:y+h, x:x+w])
-        confStr = "{0:.2f}".format(conf)
+try:
+    while True:
+        if(GPIO.input(motionDetector)):
+            for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+                img = frame.array
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                faces = faceDetect.detectMultiScale(gray, 1.3, 5)
+                
+                if (ledCounter > 10):
+                    GPIO.output(LEDPin, False)
+                    GPIO.output(LEDPinRot, False)
+                
+                for (x,y,w,h) in faces:
+                    cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
+                    id, conf = rec.predict(gray[y:y+h, x:x+w])
+                    confStr = "{0:.2f}".format(conf)
 
-        if(id==1):
-            id = "Syarif"
-            GPIO.output(LEDPin, True)
-            ledCounter = 0
-        elif(id==2):
-            id = "Alice"
-        elif(id==3):
-            id="Simon"   
+                    if(id==1):
+                        id = "Syarif"
+                        ledCounter = 0
+                    elif(id==2):
+                        id = "Alice"
+                    elif(id==3):
+                        id="Simon"   
 
-        if conf<70:
-            cv2.putText(img, str(id), (x, y + h), font, fontScale, fontColor)
-        elif conf>95:
-            cv2.putText(img, "Warning, Stranger!", (x, y + h), font, fontScale, (0, 0, 255))
-        else:
-            cv2.putText(img, str(confStr)+ "%", (x, y + h), font, fontScale, fontColor)
-        
-    ledCounter += 1
-    cv2.imshow('name',img)
-    rawCapture.truncate(0)
-    #exit if you press q
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+                    if conf<70:
+                        cv2.putText(img, str(id), (x, y + h), font, fontScale, fontColor)
+                        GPIO.output(LEDPin, True)
+                        GPIO.output(LEDPinRot, False)
+                    elif conf>95:
+                        cv2.putText(img, "Warning, Stranger!", (x, y + h), font, fontScale, (0, 0, 255))
+                        GPIO.output(LEDPinRot, True)
+                        GPIO.output(LEDPin, False)
+                    else:
+                        cv2.putText(img, str(confStr)+ "%", (x, y + h), font, fontScale, fontColor)
+                        
+                    
+                ledCounter += 1
+                cv2.imshow('name',img)
+                rawCapture.truncate(0)
+                #exit if you press q
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
 
-GPIO.cleanup()
-cv2.destroyAllWindows()
+            cv2.destroyAllWindows()
+            
+except KeyboardInterrupt:  
+    # here you put any code you want to run before the program   
+    # exits when you press CTRL+C  
+    print("exit by user") # print value of counter 
+            
+finally:
+	GPIO.cleanup()
