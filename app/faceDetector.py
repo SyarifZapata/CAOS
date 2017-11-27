@@ -43,8 +43,7 @@ try:
     while True:
         if(GPIO.input(motionDetector)):
             lcd.write_string(u'Welcome! Please\n\rlook to the cam')
-            time.sleep(2)
-            lcd.clear()
+            
             for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
                 img = frame.array
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -53,9 +52,9 @@ try:
                 if (ledCounter > 10):
                     GPIO.output(LEDPin, False)
                     GPIO.output(LEDPinRot, False)
-                    lcd.write_string(u'Do not move\n\rdetecting face')
-                    time.sleep(2)
                     lcd.clear()
+                    lcd.write_string(u'Do not move\n\rdetecting face')
+                    
                 
                 for (x,y,w,h) in faces:
                     cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
@@ -75,20 +74,23 @@ try:
                         GPIO.output(LEDPin, True)
                         GPIO.output(LEDPinRot, False)
                         lcd.write_string(u'Welcome %s!' % (id))
-                        time.sleep(2)
+                        time.sleep(1)
                         lcd.clear()
                     elif conf>95:
                         cv2.putText(img, "Warning, Stranger!", (x, y + h), font, fontScale, (0, 0, 255))
                         GPIO.output(LEDPinRot, True)
                         GPIO.output(LEDPin, False)
+                        lcd.clear()
                         lcd.write_string(u'Welcome Stranger')
                         time.sleep(2)
                         lcd.clear()
                         lcd.write_string(u'Please push the\n\rbutton')
-                        time.sleep(2)
-                        lcd.clear()
+                        
                     else:
                         cv2.putText(img, str(confStr)+ "%", (x, y + h), font, fontScale, fontColor)
+                        lcd.clear()
+                        lcd.write_string(u'Do not move\n\rdetecting face')
+                        
                         
                     
                 ledCounter += 1
