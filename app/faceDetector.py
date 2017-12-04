@@ -5,7 +5,7 @@ from time import sleep
 import time
 import cv2
 import numpy as np
-#import pyfirmata
+import pyfirmata
 
 GPIO.setmode(GPIO.BCM)
 LEDPin = 22
@@ -15,8 +15,8 @@ GPIO.setup(LEDPin, GPIO.OUT)
 GPIO.setup(LEDPinRot, GPIO.OUT)
 GPIO.setup(motionDetector, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
 
-#board = pyfirmata.Arduino('/dev/ttyACM0')
-#pin6 = board.get_pin('d:6:o')
+board = pyfirmata.Arduino('/dev/ttyACM0')
+pinArdunioLED = board.get_pin('d:6:o')
 #pinGSM = board.get_pin('d:4:o')
 
 camera = PiCamera()
@@ -44,7 +44,7 @@ try:
                 if (ledCounter > 10):
                     GPIO.output(LEDPin, False)
                     GPIO.output(LEDPinRot, False)
-                    #pin6.write(0)
+                    pinArdunioLED.write(0)
                 
                 for (x,y,w,h) in faces:
                     cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
@@ -62,7 +62,7 @@ try:
                     if conf<70:
                         cv2.putText(img, str(id), (x, y + h), font, fontScale, fontColor)
                         GPIO.output(LEDPin, True)
-                        #pin6.write(1)
+                        pinArdunioLED.write(1)
                         #pinGSM.write(1)
                         GPIO.output(LEDPinRot, False)
                         #pinGSM.write(0)
