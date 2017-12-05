@@ -752,8 +752,14 @@ void systemResetCallback()
   isResetting = false;
 }
 
+int buttonPin = 0;
+volatile int buttonState = 0; 
+bool clicked = false;
+
 void setup()
 {
+ 
+  attachInterrupt(buttonPin,ledOn,RISING);
   Firmata.setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
 
   Firmata.attach(ANALOG_MESSAGE, analogWriteCallback);
@@ -777,6 +783,17 @@ void setup()
   }
 
   systemResetCallback();  // reset to default config
+}
+
+void ledOn(){
+  buttonState = digitalRead(13);
+  if(buttonState == LOW){
+    digitalWrite(13, HIGH);
+  }else{
+    digitalWrite(13, LOW);
+  }
+  delay(100);
+  
 }
 
 /*==============================================================================
@@ -821,9 +838,9 @@ void loop()
   int contact = digitalRead(6);
  
   if(contact == HIGH) {
-    digitalWrite(13, HIGH);
+    digitalWrite(12, HIGH);
   }else{
-    digitalWrite(13,LOW);
+    digitalWrite(12,LOW);
   }
 
 #ifdef FIRMATA_SERIAL_FEATURE
