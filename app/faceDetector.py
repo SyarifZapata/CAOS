@@ -1,3 +1,4 @@
+from socketIO_client_nexus import SocketIO
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import RPi.GPIO as GPIO
@@ -5,7 +6,7 @@ from time import sleep
 import time
 import cv2
 import numpy as np
-import pyfirmata
+
 
 GPIO.setmode(GPIO.BCM)
 LEDPin = 22
@@ -14,10 +15,6 @@ motionDetector = 21
 GPIO.setup(LEDPin, GPIO.OUT)
 GPIO.setup(LEDPinRot, GPIO.OUT)
 GPIO.setup(motionDetector, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
-
-board = pyfirmata.Arduino('/dev/ttyACM0')
-pinArdunioLED = board.get_pin('d:6:o')
-#pinGSM = board.get_pin('d:4:o')
 
 camera = PiCamera()
 camera.resolution = (640,480)
@@ -33,9 +30,27 @@ fontScale = 1
 fontColor = (255, 255, 255)
 ledCounter = 0
 
+startTimeFaceDetected = 0
+
+def current_milis():
+    return int(round(time.time()))
+
+def on_disconnect():
+    print('disconnect')
+    
+def on_connect(*args):
+    print("connected to Server")
+    socketIO.emit('clientPi',"Pi: I'm now connected to the server")
+
+socketIO = SocketIO('139.162.182.153',3008)
+socketIO.on('welcome', on_connect)
+socketIO.on('disconnect',on_disconnect)
+
 try:
     while True:
         if(GPIO.input(motionDetector)):
+            socketIO.emit('clientPi',"Pi: Someone is there")
+            strangerDetected = False
             for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
                 img = frame.array
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -44,7 +59,6 @@ try:
                 if (ledCounter > 10):
                     GPIO.output(LEDPin, False)
                     GPIO.output(LEDPinRot, False)
-                    pinArdunioLED.write(0)
                 
                 for (x,y,w,h) in faces:
                     cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
@@ -62,14 +76,20 @@ try:
                     if conf<70:
                         cv2.putText(img, str(id), (x, y + h), font, fontScale, fontColor)
                         GPIO.output(LEDPin, True)
-                        pinArdunioLED.write(1)
-                        #pinGSM.write(1)
                         GPIO.output(LEDPinRot, False)
-                        #pinGSM.write(0)
+                        
+                        if(current_milis()- startTimeFaceDetected>2):
+                            socketIO.emit('clientPi',"Pi: Face recognized")
+                            startTimeFaceDetected = current_milis()
+                        
+                       
                     elif conf>95:
                         cv2.putText(img, "Warning, Stranger!", (x, y + h), font, fontScale, (0, 0, 255))
                         GPIO.output(LEDPinRot, True)
                         GPIO.output(LEDPin, False)
+                        if(not strangerDetected):
+                            socketIO.emit('clientPi',"Pi: WARNING!! stranger!")
+                            strangerDetected = True
                     else:
                         cv2.putText(img, str(confStr)+ "%", (x, y + h), font, fontScale, fontColor)
                         
@@ -86,7 +106,8 @@ try:
 except KeyboardInterrupt:  
     # here you put any code you want to run before the program   
     # exits when you press CTRL+C  
-    print("exit by user") # print value of counter 
+    print("exit by user") 
             
 finally:
 	GPIO.cleanup()
+	#socketIO.wait()
