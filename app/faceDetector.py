@@ -78,8 +78,9 @@ try:
                         GPIO.output(LEDPin, True)
                         GPIO.output(LEDPinRot, False)
                         
-                        if(current_milis()- startTimeFaceDetected>2):
-                            socketIO.emit('clientPi',"Pi: Face recognized")
+                        if(current_milis()- startTimeFaceDetected>5):
+                            socketIO.emit('clientPi',"faceDetected")
+                            #socketIO.emit('faceDetected',"Pi: TurnOn the light")
                             startTimeFaceDetected = current_milis()
                         
                        
