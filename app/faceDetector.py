@@ -6,7 +6,7 @@ from time import sleep
 import time
 import cv2
 import numpy as np
-
+from RPLCD import CharLCD
 
 GPIO.setmode(GPIO.BCM)
 LEDPin = 22
@@ -15,6 +15,17 @@ motionDetector = 21
 GPIO.setup(LEDPin, GPIO.OUT)
 GPIO.setup(LEDPinRot, GPIO.OUT)
 GPIO.setup(motionDetector, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
+
+#LCD set up
+DataPin_4 = 5
+DataPin_5 = 6
+DataPin_6 = 13
+DataPin_7 = 19
+PinRS = 18
+PinE = 23
+
+lcd = CharLCD(cols=16, rows=2, pin_rs=PinRS, pin_e=PinE, pins_data=[DataPin_4, DataPin_5, DataPin_6, DataPin_7], numbering_mode = GPIO.BCM)
+
 
 camera = PiCamera()
 camera.resolution = (640,480)
@@ -51,6 +62,8 @@ try:
         if(GPIO.input(motionDetector)):
             socketIO.emit('clientPi',"Pi: Someone is there")
             strangerDetected = False
+            lcd.write_string(u'Welcome! Please\n\rlook to the cam')
+            
             for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
                 img = frame.array
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -59,6 +72,9 @@ try:
                 if (ledCounter > 10):
                     GPIO.output(LEDPin, False)
                     GPIO.output(LEDPinRot, False)
+                    lcd.clear()
+                    lcd.write_string(u'Do not move\n\rdetecting face')
+                    
                 
                 for (x,y,w,h) in faces:
                     cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
@@ -77,6 +93,9 @@ try:
                         cv2.putText(img, str(id), (x, y + h), font, fontScale, fontColor)
                         GPIO.output(LEDPin, True)
                         GPIO.output(LEDPinRot, False)
+                        lcd.write_string(u'Welcome %s!' % (id))
+                        time.sleep(1)
+                        lcd.clear()
                         
                         if(current_milis()- startTimeFaceDetected>5):
                             socketIO.emit('clientPi',"faceDetected")
@@ -88,11 +107,19 @@ try:
                         cv2.putText(img, "Warning, Stranger!", (x, y + h), font, fontScale, (0, 0, 255))
                         GPIO.output(LEDPinRot, True)
                         GPIO.output(LEDPin, False)
+                        lcd.clear()
+                        lcd.write_string(u'Welcome Stranger')
+                        time.sleep(2)
+                        lcd.clear()
+                        lcd.write_string(u'Please push the\n\rbutton')
+                        
                         if(not strangerDetected):
                             socketIO.emit('clientPi',"Pi: WARNING!! stranger!")
                             strangerDetected = True
                     else:
                         cv2.putText(img, str(confStr)+ "%", (x, y + h), font, fontScale, fontColor)
+                        lcd.clear()
+                        lcd.write_string(u'Do not move\n\rdetecting face')
                         
                     
                 ledCounter += 1
