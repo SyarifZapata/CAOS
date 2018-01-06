@@ -1,8 +1,7 @@
-import pyfirmata
+from nanpy import (ArduinoApi, SerialManager)
 from RPLCD import CharLCD
 import RPi.GPIO as GPIO
-
-board = pyfirmata.Arduino('/dev/ttyACM0')
+from time import sleep
 
 GPIO.setmode(GPIO.BCM)
 
@@ -16,16 +15,14 @@ PinE = 23
 lcd = CharLCD(cols=16, rows=2, pin_rs=PinRS, pin_e=PinE, pins_data=[DataPin_4, DataPin_5, DataPin_6, DataPin_7], numbering_mode = GPIO.BCM)
 
 
-#RST_PIN = board.get_pin('d:9:o')
-#SS_PIN = board.get_pin('d:10:o')
 
+ledPin = 13
 
-#readCard[4]
-#myTags[100] = {}
-tagsCount = 0
-tagID = ""
-successRead = False
-correctTag = False
-
-
-lcd.write_string('Hello Simon')
+try:
+    connecter = SerialManager()
+    arduino = ArduinoApi(connection = connecter)
+except:
+    print("Failed to connect to Arduino")
+    
+# Set up the pin modes as  if we were in Arduino IDE
+arduino.pinMode(ledPin, arduino.OUTPUT)
