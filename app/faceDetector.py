@@ -20,6 +20,8 @@ GPIO.setup(motionDetector, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
 
 #message Controller
 message1 = False
+message2 = False
+message3 = False
 
 #Setup keypad
 MATRIX = [
@@ -170,7 +172,7 @@ try:
             strangerDetected = False
             #message when camera is turned off
             lcd.clear()
-            lcd.message('Adafruit CharLCD\n  Raspberry Pi')
+            lcd.message('Welcome to CAOS\nSecurity System')
             print("motion detected")
             #lcd.write_string(u'Welcome! Please\n\rlook to the cam')
         
@@ -209,7 +211,12 @@ try:
                         cv2.putText(img, str(id), (x, y + h), font, fontScale, fontColor)
                         GPIO.output(LEDPin, True)
                         GPIO.output(LEDPinRot, False)
-                        
+                        if(not message2):
+                            lcd.clear()
+                            lcd.message("Welcome %s!" % (id))
+                            lcd.set_cursor(0,1)
+                            message2 = True
+                            
                         faceDetected = True
                         break 
                         
@@ -227,6 +234,10 @@ try:
                         cv2.putText(img, "Warning, Stranger!", (x, y + h), font, fontScale, (0, 0, 255))
                         GPIO.output(LEDPinRot, True)
                         GPIO.output(LEDPin, False)
+                        if(not message3):
+                            lcd.clear()
+                            lcd.message("Welcome Stranger")
+                            message3 = True
                         #lcd.clear()
                         #lcd.write_string(u'Welcome Stranger')
                         #time.sleep(2)
