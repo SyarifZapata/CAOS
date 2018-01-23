@@ -17,6 +17,7 @@ motionDetector = 21
 GPIO.setup(LEDPin, GPIO.OUT)
 GPIO.setup(LEDPinRot, GPIO.OUT)
 GPIO.setup(motionDetector, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
+GPIO.setup(16, GPIO.IN, pull_up_down = GPIO.PUD_UP)
 
 #message Controller
 message1 = False
@@ -139,6 +140,8 @@ try:
                                                checkPassword(userInput)
                                                if check == "success":
                                                    faceDetected = False
+                                                   socketIO.emit('clientPi',"faceDetected")
+##                                                   socketIO.emit('faceDetected',"Pi: TurnOn the light")
                                                    print("break")
                                                    break
                                                else:
@@ -170,6 +173,7 @@ try:
         
             socketIO.emit('clientPi',"Pi: Someone is there")
             strangerDetected = False
+            inCall = False
             #message when camera is turned off
             lcd.clear()
             lcd.message('Welcome to CAOS\nSecurity System')
@@ -192,13 +196,27 @@ try:
                     GPIO.output(LEDPin, False)
                     GPIO.output(LEDPinRot, False)
                     
+                inputValue = GPIO.input(16)
+                if(inputValue == False and strangerDetected):
+                    print("Button Pressed")
+                    if(not inCall):
+                        socketIO.emit('clientPi',"strangerDetected")
+                        inCall = True
+                    
                 
                 for (x,y,w,h) in faces:
                     startTimeNoFaceDetected = current_milis()
                     cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
                     id, conf = rec.predict(gray[y:y+h, x:x+w])
                     confStr = "{0:.2f}".format(conf)
-
+                    
+                    #button activated
+                    if(inputValue == False and strangerDetected):
+                        print("Button Pressed")
+                        if(not inCall):
+                            socketIO.emit('clientPi',"strangerDetected")
+                            inCall = True
+                        
                     if(id==1):
                         id = "Syarif"
                         ledCounter = 0
@@ -226,7 +244,6 @@ try:
                         
                         if(current_milis()- startTimeFaceDetected>5):
                             socketIO.emit('clientPi',"faceDetected")
-                            #socketIO.emit('faceDetected',"Pi: TurnOn the light")
                             startTimeFaceDetected = current_milis()
                         
                        
@@ -245,7 +262,6 @@ try:
                         #lcd.write_string(u'Please push the\n\rbutton')
                         
                         if(not strangerDetected):
-                            socketIO.emit('clientPi',"strangerDetected")
                             strangerDetected = True
                     else:
                         cv2.putText(img, str(confStr)+ "%", (x, y + h), font, fontScale, fontColor)
