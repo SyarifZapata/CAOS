@@ -10,6 +10,7 @@ import numpy as np
 #from RPLCD import CharLCD
 from Adafruit_CharLCD import Adafruit_CharLCD
 
+#Setup Pin
 GPIO.setmode(GPIO.BCM)
 LEDPin = 22
 LEDPinRot = 17
@@ -19,7 +20,7 @@ GPIO.setup(LEDPinRot, GPIO.OUT)
 GPIO.setup(motionDetector, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
 GPIO.setup(16, GPIO.IN, pull_up_down = GPIO.PUD_UP)
 
-#message Controller
+#Message Controller
 message1 = False
 message2 = False
 message3 = False
@@ -70,7 +71,7 @@ except:
     print("cannot connect to Arduino")
     
 
-#Keypad setup
+#Setup Keypad
 for j in range(4):
     arduino.pinMode(COL[j], arduino.OUTPUT)
     arduino.digitalWrite(COL[j], arduino.HIGH)
@@ -84,6 +85,7 @@ password = ['1', '2', '3', '4']
 userInput = []
 check = ""
 
+#Check password for keypad
 def checkPassword(input):
     global check
     if input == password:
@@ -123,14 +125,14 @@ try:
         startTimeNoFaceDetected = current_milis()
         if(faceDetected):
             while(True):
-                        print("immer no ih de while schlaufe")
+                        print("immer no ih de while schlaufe")  #Breakpoint to know where we are
                         if(faceDetected == False):
-                            print("aussen")
+                            print("aussen") #Breakpoint
                             break
                         for j in range(4):
                             arduino.digitalWrite(COL[j], arduino.LOW)
                             if(faceDetected == False):
-                                print("innen")
+                                print("innen")  #Breakpoint
                                 break
                             for i in range(4):
                                 if arduino.digitalRead(ROW[i]) == arduino.LOW:  #check if button is pressed
@@ -142,10 +144,10 @@ try:
                                                    faceDetected = False
                                                    socketIO.emit('clientPi',"faceDetected")
 ##                                                   socketIO.emit('faceDetected',"Pi: TurnOn the light")
-                                                   print("break")
+                                                   print("break")   #Breakpoint
                                                    break
                                                else:
-                                                   print("Mann simon")
+                                                   print("Mann simon")  #Breakpoint
                                                    userInput = []
                                                    cursorPosition = 0
                                            else:
@@ -177,7 +179,7 @@ try:
             #message when camera is turned off
             lcd.clear()
             lcd.message('Welcome to CAOS\nSecurity System')
-            print("motion detected")
+            print("motion detected")    #Breakpoint
             #lcd.write_string(u'Welcome! Please\n\rlook to the cam')
         
             for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
@@ -198,7 +200,7 @@ try:
                     
                 inputValue = GPIO.input(16)
                 if(inputValue == False and strangerDetected):
-                    print("Button Pressed")
+                    print("Button Pressed") #Breakpoint
                     if(not inCall):
                         socketIO.emit('clientPi',"strangerDetected")
                         inCall = True
@@ -274,7 +276,7 @@ try:
                 rawCapture.truncate(0)
                 
                 if(faceDetected):
-                    print("fertig lustig")
+                    print("fertig lustig")  #Breakpoint
                     break
                 
                 #exit if you press q
