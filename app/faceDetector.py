@@ -84,6 +84,7 @@ cursorPosition = 0
 password = ['1', '2', '3', '4']
 userInput = []
 check = ""
+beforeFirstButtonPressed = True
 
 #Check password for keypad
 def checkPassword(input):
@@ -124,6 +125,8 @@ try:
     while True:
         startTimeNoFaceDetected = current_milis()
         if(faceDetected):
+            lcd.clear()
+            lcd.message("Enter Password:")
             while(True):
                         print("immer no ih de while schlaufe")  #Breakpoint to know where we are
                         if(faceDetected == False):
@@ -151,12 +154,16 @@ try:
                                                    userInput = []
                                                    cursorPosition = 0
                                            else:
+                                               if (beforeFirstButtonPressed):
+                                                   lcd.clear()
                                                userInput.append(pressedButton)
                                                #print pressedButton
                                                #print i
                                                #print j
                                                lcd.set_cursor(cursorPosition,0)
-                                               lcd.message(u'%c' % pressedButton)
+                                               lcd.message("*")
+                                               #lcd.message(u'%c' % pressedButton)
+                                               beforeFirstButtonPressed = False
                                                cursorPosition += 1
                                    else:
                                        lcd.clear()
@@ -201,6 +208,7 @@ try:
                 inputValue = GPIO.input(16)
                 if(inputValue == False and strangerDetected):
                     print("Button Pressed") #Breakpoint
+                    lcd.clear()
                     if(not inCall):
                         socketIO.emit('clientPi',"strangerDetected")
                         inCall = True
@@ -215,6 +223,7 @@ try:
                     #button activated
                     if(inputValue == False and strangerDetected):
                         print("Button Pressed")
+                        lcd.clear()
                         if(not inCall):
                             socketIO.emit('clientPi',"strangerDetected")
                             inCall = True
@@ -232,6 +241,9 @@ try:
                         GPIO.output(LEDPin, True)
                         GPIO.output(LEDPinRot, False)
                         if(not message2):
+                            lcd.clear()
+                            lcd.message("Face Detected!")
+                            sleep(2)
                             lcd.clear()
                             lcd.message("Welcome %s!" % (id))
                             lcd.set_cursor(0,1)
@@ -255,7 +267,15 @@ try:
                         GPIO.output(LEDPin, False)
                         if(not message3):
                             lcd.clear()
+                            lcd.message("Face ")
+                            lcd.set_cursor(0,1)
+                            lcd.message("Not Detected")
+                            sleep(2)
+                            lcd.clear()
                             lcd.message("Welcome Stranger")
+                            sleep(2)
+                            lcd.clear()
+                            lcd.message("Please \n Push the Button")
                             message3 = True
                         #lcd.clear()
                         #lcd.write_string(u'Welcome Stranger')
