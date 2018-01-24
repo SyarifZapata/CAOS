@@ -85,29 +85,72 @@ password = ['1', '2', '3', '4']
 userInput = []
 check = ""
 beforeFirstButtonPressed = True
+tooManyButtonsPressed = False
+passwordCounter = 0
+attempts = 3
+accessBlocked = False
+
 
 #Check password for keypad
 def checkPassword(input):
     global check
+    global passwordCounter
+    global attempts
+    global accessBlocked
+    global lastAccessBlocked
     if input == password:
-        lcd.clear()
-        lcd.message(u'Access granted')
-        lcd.set_cursor(0,1)
-        lcd.message(u'****************')
-        sleep(2)
-        lcd.clear()
-        check = "success"
+        if(not accessBlocked):
+            lcd.clear()
+            lcd.message(u'Access granted')
+            lcd.set_cursor(0,1)
+            lcd.message(u'****************')
+            sleep(2)
+            lcd.clear()
+            check = "success"
+        else:
+            lcd.clear()
+            lcd.message(u'Access denied')
+            lcd.set_cursor(0,1)
+            lcd.message(u'Wrong Password')
+            sleep(2)
+            lcd.clear()
+            check = "failed"
+            
     else:
-        lcd.clear()
-        lcd.message(u'Access denied')
-        lcd.set_cursor(0,1)
-        lcd.message(u'Wrong Password')
-        sleep(2)
-        lcd.clear()
-        check = "failed"
+        if(not accessBlocked):
+            lcd.clear()
+            lcd.message(u'Access denied')
+            lcd.set_cursor(0,1)
+            lcd.message(u'Wrong Password')
+            sleep(2)
+            lcd.clear()
+            passwordCounter += 1
+            remainingAttempts = attempts - passwordCounter
+            if passwordCounter == attempts:
+                lcd.message("Please try\nagain in 30s")
+                sleep(2)
+                lcd.clear()
+                accessBlocked = True
+                lastAccessBlocked = current_milis()
+                print(lastAccessBlocked)
+            else:
+                lcd.message("You have %(remainingAttempts)d \nremaining attempts" % {"remainingAttempts": remainingAttempts})
+                sleep(2)
+                lcd.clear()
+            check = "failed"
+        else:
+            lcd.clear()
+            lcd.message(u'Access denied')
+            lcd.set_cursor(0,1)
+            lcd.message(u'Wrong Password')
+            sleep(2)
+            lcd.clear()
+        
 
 def current_milis():
     return int(round(time.time()))
+
+lastAccessBlocked = current_milis()
 
 def on_disconnect():
     print('disconnect')
@@ -153,9 +196,15 @@ try:
                                                    print("Mann simon")  #Breakpoint
                                                    userInput = []
                                                    cursorPosition = 0
+                                                   if passwordCounter == attempts:
+                                                       faceDetected = False
+                                                       break
+                                                       
+                                                   
                                            else:
-                                               if (beforeFirstButtonPressed):
+                                               if (beforeFirstButtonPressed or tooManyButtonsPressed or accessBlocked):
                                                    lcd.clear()
+                                                   tooManyButtonsPressed = False
                                                userInput.append(pressedButton)
                                                #print pressedButton
                                                #print i
@@ -173,13 +222,19 @@ try:
                                        lcd.message(u' were pressed!')
                                        sleep(2)
                                        lcd.clear()
+                                       userInput = []
+                                       lcd.message("Enter Password\nagain")
+                                       tooManyButtonsPressed = True
                                        cursorPosition = 0
                                 while(arduino.digitalRead(ROW[i]) == arduino.LOW):
                                     pass                                          #do nothing as long button still pressed
                             arduino.digitalWrite(COL[j], arduino.HIGH)
             
         if(GPIO.input(motionDetector)):
-        
+            
+            message1 = False
+            message2 = False
+            message3 = False
             socketIO.emit('clientPi',"Pi: Someone is there")
             strangerDetected = False
             inCall = False
@@ -193,6 +248,11 @@ try:
                 img = frame.array
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 faces = faceDetect.detectMultiScale(gray, 1.3, 5)
+                if(current_milis()-lastAccessBlocked >= 30):
+                    accessBlocked = False
+                    passwordCounter = 0
+                    
+                    
                 if(not message1):
                     lcd.clear()
                     lcd.message("   Do not move\n Detecting face")
@@ -212,6 +272,7 @@ try:
                     if(not inCall):
                         socketIO.emit('clientPi',"strangerDetected")
                         inCall = True
+                        lcd.message("Process Calling\nPlease Wait. . .")
                     
                 
                 for (x,y,w,h) in faces:
@@ -227,7 +288,9 @@ try:
                         if(not inCall):
                             socketIO.emit('clientPi',"strangerDetected")
                             inCall = True
-                        
+                            lcd.message("Process Calling\nPlease Wait. . .")
+                            
+
                     if(id==1):
                         id = "Syarif"
                         ledCounter = 0
@@ -239,6 +302,7 @@ try:
                     if conf<70:
                         cv2.putText(img, str(id), (x, y + h), font, fontScale, fontColor)
                         GPIO.output(LEDPin, True)
+                        print("GREEN LED IS ON")
                         GPIO.output(LEDPinRot, False)
                         if(not message2):
                             lcd.clear()
@@ -275,7 +339,7 @@ try:
                             lcd.message("Welcome Stranger")
                             sleep(2)
                             lcd.clear()
-                            lcd.message("Please \n Push the Button")
+                            lcd.message("Please \nPush the Button")
                             message3 = True
                         #lcd.clear()
                         #lcd.write_string(u'Welcome Stranger')
