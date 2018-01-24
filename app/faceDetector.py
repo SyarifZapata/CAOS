@@ -202,7 +202,7 @@ try:
                                                        
                                                    
                                            else:
-                                               if (beforeFirstButtonPressed or tooManyButtonsPressed or accessBlocked):
+                                               if (beforeFirstButtonPressed or tooManyButtonsPressed):
                                                    lcd.clear()
                                                    tooManyButtonsPressed = False
                                                userInput.append(pressedButton)
