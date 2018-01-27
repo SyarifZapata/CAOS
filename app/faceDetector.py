@@ -184,6 +184,9 @@ try:
                                 if arduino.digitalRead(ROW[i]) == arduino.LOW:  #check if button is pressed
                                    pressedButton = MATRIX[i][j]
                                    if cursorPosition < 16:
+                                           if pressedButton == 'D':
+                                               faceDetected = False
+                                               break
                                            if pressedButton == '#':
                                                checkPassword(userInput)
                                                if check == "success":
@@ -279,7 +282,7 @@ try:
                     startTimeNoFaceDetected = current_milis()
                     cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
                     id, conf = rec.predict(gray[y:y+h, x:x+w])
-                    confStr = "{0:.2f}".format(conf)
+                    confStr = "{0:.2f}".format(100-conf)
                     
                     #button activated
                     if(inputValue == False and strangerDetected):
@@ -301,7 +304,7 @@ try:
                     elif(id==3):
                         id="Simon"   
 
-                    if conf<55:
+                    if conf<50:
                         cv2.putText(img, str(id), (x, y + h), font, fontScale, fontColor)
                         GPIO.output(LEDPin, True)
                         print("GREEN LED IS ON")
@@ -327,7 +330,7 @@ try:
                             startTimeFaceDetected = current_milis()
                         
                        
-                    elif conf>95:
+                    elif conf>80:
                         cv2.putText(img, "Warning, Stranger!", (x, y + h), font, fontScale, (0, 0, 255))
                         GPIO.output(LEDPinRot, True)
                         GPIO.output(LEDPin, False)
