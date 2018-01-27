@@ -7,6 +7,7 @@ const publicPath = path.join(__dirname, '../public');
 var app = express();
 var server = http.createServer(app);
 var io = socketIO(server);
+var relayState = false;
 
 app.use(express.static(publicPath));
 
@@ -16,8 +17,7 @@ function ParseJson(jsondata) {
     try {
         return JSON.parse(jsondata);
     } catch (error) {
-        console.log("something went wrong while parsing Json")
-        return null;
+        console.log("something went wrong while parsing Json");
     }
 }
 
@@ -29,10 +29,19 @@ function sendTime() {
 io.on('connection', (socket) => {
     console.log("new user connected");
 // Copied
-    socket.emit('welcome', { message: 'Connected to the Server' });
+    socket.emit('welcome', { message: 'Connected to the Server', relayState: relayState});
 
     socket.on('connection', function (data) {
         console.log(data);   });
+
+    socket.on('clientPi', function (data) {
+       if(data === 'faceDetected'){
+           io.sockets.emit('arduino', {message: 'relayON'});
+       }else if(data === 'strangerDetected'){
+           io.sockets.emit('android', {message: 'callHost'})
+       }
+       console.log(data)
+    });
 
     socket.on('clientArduino', function (data) {
         sendTime();
@@ -42,11 +51,13 @@ io.on('connection', (socket) => {
 
     socket.on("relayON", function (message) {
        io.sockets.emit('arduino', {message: 'relayON'});
+       relayState = true;
        console.log(message);
     });
 
     socket.on("relayOFF", function (message) {
         io.sockets.emit('arduino', {message: 'relayOFF'});
+        relayState = false;
         console.log(message);
     });
 
