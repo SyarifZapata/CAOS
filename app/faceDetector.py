@@ -171,7 +171,7 @@ try:
             lcd.clear()
             lcd.message("Enter Password:")
             while(True):
-                        print("immer no ih de while schlaufe")  #Breakpoint to know where we are
+                        #print("immer no ih de while schlaufe")  #Breakpoint to know where we are
                         if(faceDetected == False):
                             print("aussen") #Breakpoint
                             break
@@ -188,12 +188,10 @@ try:
                                                checkPassword(userInput)
                                                if check == "success":
                                                    faceDetected = False
-                                                   socketIO.emit('clientPi',"faceDetected")
-##                                                   socketIO.emit('faceDetected',"Pi: TurnOn the light")
-                                                   print("break")   #Breakpoint
+                                                   socketIO.emit('clientPi',"faceDetected")                                                   
                                                    break
                                                else:
-                                                   print("Mann simon")  #Breakpoint
+                                                   #print("Mann simon")  #Breakpoint
                                                    userInput = []
                                                    cursorPosition = 0
                                                    if passwordCounter == attempts:
@@ -299,7 +297,7 @@ try:
                     elif(id==3):
                         id="Simon"   
 
-                    if conf<70:
+                    if conf<55:
                         cv2.putText(img, str(id), (x, y + h), font, fontScale, fontColor)
                         GPIO.output(LEDPin, True)
                         print("GREEN LED IS ON")
