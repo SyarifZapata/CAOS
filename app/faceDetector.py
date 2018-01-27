@@ -86,6 +86,7 @@ userInput = []
 check = ""
 beforeFirstButtonPressed = True
 tooManyButtonsPressed = False
+waitingForAccessFirstTime = False
 passwordCounter = 0
 attempts = 3
 accessBlocked = False
@@ -98,6 +99,7 @@ def checkPassword(input):
     global attempts
     global accessBlocked
     global lastAccessBlocked
+    global waitingForAccessFirstTime
     if input == password:
         if(not accessBlocked):
             lcd.clear()
@@ -115,6 +117,7 @@ def checkPassword(input):
             sleep(2)
             lcd.clear()
             check = "failed"
+            waitingForAccessFirstTime=True
             
     else:
         if(not accessBlocked):
@@ -127,14 +130,14 @@ def checkPassword(input):
             passwordCounter += 1
             remainingAttempts = attempts - passwordCounter
             if passwordCounter == attempts:
-                lcd.message("Please try\nagain in 30s")
+                lcd.message("Please try\nagain in 30s!")
                 sleep(2)
                 lcd.clear()
                 accessBlocked = True
                 lastAccessBlocked = current_milis()
-                print(lastAccessBlocked)
+                waitingForAccessFirstTime = True
             else:
-                lcd.message("You have %(remainingAttempts)d \nremaining attempts" % {"remainingAttempts": remainingAttempts})
+                lcd.message("You have %(remainingAttempts)d remai\nning attempts" % {"remainingAttempts": remainingAttempts})
                 sleep(2)
                 lcd.clear()
             check = "failed"
@@ -145,6 +148,7 @@ def checkPassword(input):
             lcd.message(u'Wrong Password')
             sleep(2)
             lcd.clear()
+            waitingForAccessFirstTime = True
         
 
 def current_milis():
@@ -203,9 +207,16 @@ try:
                                                        
                                                    
                                            else:
+                                               #this condition is true if the keypad is pressed for the first time or too many
+                                               #characters are typed in.                                    
                                                if (beforeFirstButtonPressed or tooManyButtonsPressed):
                                                    lcd.clear()
                                                    tooManyButtonsPressed = False
+                                                #this condition is true if any password is entered while access is blocked
+                                               if (waitingForAccessFirstTime):
+                                                   lcd.clear()
+                                                   print("sssss")
+                                                   waitingForAccessFirstTime = False
                                                userInput.append(pressedButton)
                                                #print pressedButton
                                                #print i
