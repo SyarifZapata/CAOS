@@ -43,7 +43,6 @@ DataPin_7 = 19
 PinRS = 18
 PinE = 23
 
-#lcd = CharLCD(cols=16, rows=2, pin_rs=PinRS, pin_e=PinE, pins_data=[DataPin_4, DataPin_5, DataPin_6, DataPin_7], numbering_mode = GPIO.BCM)
 lcd = Adafruit_CharLCD(rs=PinRS, en=PinE, d4=DataPin_4, d5=DataPin_5, d6=DataPin_6, d7= DataPin_7, cols = 16, lines=2)
 
 camera = PiCamera()
@@ -164,7 +163,7 @@ socketIO.on('welcome', on_connect)
 socketIO.on('disconnect',on_disconnect)
 
 try:
-    
+    GPIO.output(LEDPin, False)
     while True:
         startTimeNoFaceDetected = current_milis()
         if(faceDetected):
@@ -188,7 +187,8 @@ try:
                                                checkPassword(userInput)
                                                if check == "success":
                                                    faceDetected = False
-                                                   socketIO.emit('clientPi',"faceDetected")                                                   
+                                                   socketIO.emit('clientPi',"faceDetected")
+                                                   GPIO.output(LEDPin, False)
                                                    break
                                                else:
                                                    #print("Mann simon")  #Breakpoint
@@ -229,7 +229,7 @@ try:
                             arduino.digitalWrite(COL[j], arduino.HIGH)
             
         if(GPIO.input(motionDetector)):
-            
+
             message1 = False
             message2 = False
             message3 = False
@@ -312,15 +312,11 @@ try:
                             message2 = True
                             
                         faceDetected = True
-                        break 
+                        break
                         
-                        #lcd.write_string(u'Welcome %s!' % (id))
-                        #time.sleep(1)
-                        #lcd.clear()
-                        
-                        if(current_milis()- startTimeFaceDetected>5):
-                            socketIO.emit('clientPi',"faceDetected")
-                            startTimeFaceDetected = current_milis()
+                        # if(current_milis()- startTimeFaceDetected>5):
+                        #     socketIO.emit('clientPi',"faceDetected")
+                        #     startTimeFaceDetected = current_milis()
                         
                        
                     elif conf>95:
@@ -339,18 +335,13 @@ try:
                             lcd.clear()
                             lcd.message("Please \nPush the Button")
                             message3 = True
-                        #lcd.clear()
-                        #lcd.write_string(u'Welcome Stranger')
-                        #time.sleep(2)
-                        #lcd.clear()
-                        #lcd.write_string(u'Please push the\n\rbutton')
+
                         
                         if(not strangerDetected):
                             strangerDetected = True
                     else:
                         cv2.putText(img, str(confStr)+ "%", (x, y + h), font, fontScale, fontColor)
-                        #lcd.clear()
-                        #lcd.write_string(u'Do not move\n\rdetecting face')
+
                 
                     
                 ledCounter += 1
@@ -380,4 +371,4 @@ except KeyboardInterrupt:
             
 finally:
 	GPIO.cleanup()
-	#socketIO.wait()
+	socketIO.wait()
