@@ -25,17 +25,18 @@ message1 = False
 message2 = False
 message3 = False
 
-#Setup keypad
+#Setup keypad. Represents a 4x4 matrix with its entries.
 MATRIX = [
     ['1', '2', '3', 'A'],
     ['4', '5', '6', 'B'],
     ['7', '8', '9', 'C'],
     ['*', '0', '#', 'D']]
 
+#The pin numbers for column and rows.
 COL = [5, 4, 3, 2]
 ROW = [9, 8, 7, 6]
 
-#LCD set up
+#LCD set up of its pin numbers.
 DataPin_4 = 5
 DataPin_5 = 6
 DataPin_6 = 13
@@ -43,6 +44,7 @@ DataPin_7 = 19
 PinRS = 18
 PinE = 23
 
+#initializes lcd with the according pin numbers.
 lcd = Adafruit_CharLCD(rs=PinRS, en=PinE, d4=DataPin_4, d5=DataPin_5, d6=DataPin_6, d7= DataPin_7, cols = 16, lines=2)
 
 camera = PiCamera()
@@ -63,18 +65,22 @@ startTimeFaceDetected = 0
 startTimeNoFaceDetected = 0
 faceDetected = False
 
+#Tries establishing connection to the Arduino via serial port.
 try:
     connecter = SerialManager()
+    #Instance of ArduinoApi object.
     arduino = ArduinoApi(connection = connecter)
 except:
     print("cannot connect to Arduino")
     
 
 #Setup Keypad
+#Setup column pins as outputs and set high.
 for j in range(4):
     arduino.pinMode(COL[j], arduino.OUTPUT)
     arduino.digitalWrite(COL[j], arduino.HIGH)
 
+#Setup row pins as inputs with pull-up resistors.
 for i in range(4):
     arduino.pinMode(ROW[i], arduino.INPUT)
     arduino.digitalWrite(ROW[i], arduino.INPUT_PULLUP)
@@ -85,22 +91,24 @@ userInput = []
 check = ""
 beforeFirstButtonPressed = True
 tooManyButtonsPressed = False
-waitingForAccessFirstTime = False
+waitingForAccess = False
 passwordCounter = 0
 attempts = 3
 accessBlocked = False
 
 
-#Check password for keypad
+#Checks password that is entered via keypad.
 def checkPassword(input):
+
     global check
     global passwordCounter
     global attempts
     global accessBlocked
     global lastAccessBlocked
-    global waitingForAccessFirstTime
+    global waitingForAccess
+
     if input == password:
-        if(not accessBlocked):
+        if(not accessBlocked):                                  #when password is correct and access is not blocked, then access will be granted.
             lcd.clear()
             lcd.message(u'Access granted')
             lcd.set_cursor(0,1)
@@ -108,7 +116,7 @@ def checkPassword(input):
             sleep(2)
             lcd.clear()
             check = "success"
-        else:
+        else:                                                   #When password is correct but access is still blocked, then access will be denied.
             lcd.clear()
             lcd.message(u'Access denied')
             lcd.set_cursor(0,1)
@@ -116,10 +124,10 @@ def checkPassword(input):
             sleep(2)
             lcd.clear()
             check = "failed"
-            waitingForAccessFirstTime=True
+            waitingForAccess = True
             
     else:
-        if(not accessBlocked):
+        if(not accessBlocked):                                  #when password is incorrect and access is not blocked, then access will be denied.
             lcd.clear()
             lcd.message(u'Access denied')
             lcd.set_cursor(0,1)
@@ -128,26 +136,26 @@ def checkPassword(input):
             lcd.clear()
             passwordCounter += 1
             remainingAttempts = attempts - passwordCounter
-            if passwordCounter == attempts:
+            if passwordCounter == attempts:                         #if password is already entered wrong three times, then access will be blocked for 30s.
                 lcd.message("Please try\nagain in 30s!")
                 sleep(2)
                 lcd.clear()
                 accessBlocked = True
                 lastAccessBlocked = current_milis()
-                waitingForAccessFirstTime = True
+                waitingForAccess = True
             else:
                 lcd.message("You have %(remainingAttempts)d remai\nning attempts" % {"remainingAttempts": remainingAttempts})
                 sleep(2)
                 lcd.clear()
             check = "failed"
-        else:
+        else:                                                       #when password is wrong and access is blocked, then access will be denied.
             lcd.clear()
             lcd.message(u'Access denied')
             lcd.set_cursor(0,1)
             lcd.message(u'Wrong Password')
             sleep(2)
             lcd.clear()
-            waitingForAccessFirstTime = True
+            waitingForAccess = True
         
 
 def current_milis():
@@ -173,39 +181,44 @@ try:
         if(faceDetected):
             lcd.clear()
             lcd.message("Enter Password:")
+            #this while loop handles the whole process of checking the password through the keypad.
             while(True):
-                        #print("immer no ih de while schlaufe")  #Breakpoint to know where we are
+                         #condition to break out of the while loop when access is granted and the system should go back to the motion detector.
                         if(faceDetected == False):
-                            print("aussen") #Breakpoint
                             break
+                        #Sets outputs of column low one at a time.
                         for j in range(4):
                             arduino.digitalWrite(COL[j], arduino.LOW)
+                            #condition to break out of the for loop when access is granted and the system should go back to the motion detector.
                             if(faceDetected == False):
-                                print("innen")  #Breakpoint
                                 break
+                            #checks each row pin if it is set low. If so then this row pin is pressed.
                             for i in range(4):
-                                if arduino.digitalRead(ROW[i]) == arduino.LOW:  #check if button is pressed
+                                if arduino.digitalRead(ROW[i]) == arduino.LOW:  #checks if button is pressed.
                                    pressedButton = MATRIX[i][j]
+                                   #check if pressed button has space on the first line of the LCD.
                                    if cursorPosition < 16:
+                                           #Button "D" is for ending the process of entering a password. This will be used for admin if he wants to open the door by the app.
                                            if pressedButton == 'D':
                                                faceDetected = False
                                                break
+                                           #Button "#" is for confirming the password. Checks automatically the confirmed password.
                                            if pressedButton == '#':
                                                checkPassword(userInput)
+                                               #If access is granted then activate relais (open door) and break out of the while loop.
                                                if check == "success":
                                                    faceDetected = False
                                                    socketIO.emit('clientPi',"faceDetected")
                                                    GPIO.output(LEDPin, False)
                                                    break
+                                               #If password is incorrect reset entered buttons and count attempts.
                                                else:
-                                                   #print("Mann simon")  #Breakpoint
                                                    userInput = []
                                                    cursorPosition = 0
                                                    if passwordCounter == attempts:
                                                        faceDetected = False
                                                        break
-                                                       
-                                                   
+
                                            else:
                                                #this condition is true if the keypad is pressed for the first time or too many
                                                #characters are typed in.                                    
@@ -213,19 +226,19 @@ try:
                                                    lcd.clear()
                                                    tooManyButtonsPressed = False
                                                 #this condition is true if any password is entered while access is blocked
-                                               if (waitingForAccessFirstTime):
+                                               if (waitingForAccess):
                                                    lcd.clear()
                                                    print("sssss")
-                                                   waitingForAccessFirstTime = False
+                                                   waitingForAccess = False
                                                userInput.append(pressedButton)
-                                               #print pressedButton
+                                               #print pressedButton             ;prints out the pressed button and its column and row number.
                                                #print i
                                                #print j
                                                lcd.set_cursor(cursorPosition,0)
                                                lcd.message("*")
-                                               #lcd.message(u'%c' % pressedButton)
                                                beforeFirstButtonPressed = False
                                                cursorPosition += 1
+                                   #When LCD's first line is already full then delete LCD and reset all pressed buttons.
                                    else:
                                        lcd.clear()
                                        lcd.set_cursor(0, 0)
@@ -238,9 +251,10 @@ try:
                                        lcd.message("Enter Password\nagain")
                                        tooManyButtonsPressed = True
                                        cursorPosition = 0
+                                #do nothing as long same button is still pressed.
                                 while(arduino.digitalRead(ROW[i]) == arduino.LOW):
-                                    pass                                          #do nothing as long button still pressed
-                            arduino.digitalWrite(COL[j], arduino.HIGH)
+                                    pass
+                            arduino.digitalWrite(COL[j], arduino.HIGH)      #Sets column pin number back to high after checking.
             
         if(GPIO.input(motionDetector)):
 
@@ -269,9 +283,6 @@ try:
                     lcd.clear()
                     lcd.message("   Do not move\n Detecting face")
                     message1 = True
-                    
-                    
-                #lcd.write_string(u'Do not move\n\rdetecting face')
                 
                 if (ledCounter > 10):
                     GPIO.output(LEDPin, False)
@@ -332,11 +343,7 @@ try:
                         faceDetected = True
                         break
                         
-                        # if(current_milis()- startTimeFaceDetected>5):
-                        #     socketIO.emit('clientPi',"faceDetected")
-                        #     startTimeFaceDetected = current_milis()
-                        
-                       
+
                     elif conf>80:
                         cv2.putText(img, "Warning, Stranger!", (x, y + h), font, fontScale, (0, 0, 255))
                         GPIO.output(LEDPinRot, True)
