@@ -271,6 +271,8 @@ try:
                         socketIO.emit('clientPi',"strangerDetected")
                         inCall = True
                         lcd.message("Process Calling\nPlease Wait. . .")
+                        sleep(4)
+                        lcd.clear()
                     
                 
                 for (x,y,w,h) in faces:
@@ -287,6 +289,8 @@ try:
                             socketIO.emit('clientPi',"strangerDetected")
                             inCall = True
                             lcd.message("Process Calling\nPlease Wait. . .")
+                            sleep(4)
+                            lcd.clear()
                             
 
                     if(id==1):
