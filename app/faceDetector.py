@@ -9,6 +9,11 @@ import cv2
 import numpy as np
 #from RPLCD import CharLCD
 from Adafruit_CharLCD import Adafruit_CharLCD
+from threading import Thread
+import pygame
+
+#init sound
+pygame.mixer.init()
 
 #Setup Pin
 GPIO.setmode(GPIO.BCM)
@@ -169,10 +174,22 @@ def on_disconnect():
 def on_connect(*args):
     print("connected to Server")
     socketIO.emit('clientPi',"Pi: I'm now connected to the server")
+    
+def on_buzzer(*args):
+    if(args[0]['message'] == "relayON"):
+        pygame.mixer.music.load("buzzer.mp3")
+        pygame.mixer.music.play()
+    
+def threaded_function(arg):
+    socketIO.wait()
+    
 
 socketIO = SocketIO('139.162.182.153',3008)
 socketIO.on('welcome', on_connect)
 socketIO.on('disconnect',on_disconnect)
+socketIO.on('arduino',on_buzzer)
+thread = Thread(target = threaded_function, args = (10, ))
+thread.start()
 
 try:
     GPIO.output(LEDPin, False)
@@ -209,6 +226,9 @@ try:
                                                if check == "success":
                                                    faceDetected = False
                                                    socketIO.emit('clientPi',"faceDetected")
+##                                                   pygame.mixer.music.load("buzzer.mp3")
+##                                                   pygame.mixer.music.play()
+                                                   
                                                    GPIO.output(LEDPin, False)
                                                    break
                                                #If password is incorrect reset entered buttons and count attempts.
@@ -289,6 +309,12 @@ try:
                     GPIO.output(LEDPinRot, False)
                     
                 inputValue = GPIO.input(16)
+                if(inputValue == False):
+                    pygame.mixer.music.load("bell.mp3")
+                    pygame.mixer.music.play()
+##                    while pygame.mixer.music.get_busy() == True:
+##                        continue
+                    
                 if(inputValue == False and strangerDetected):
                     print("Button Pressed") #Breakpoint
                     lcd.clear()
@@ -305,6 +331,12 @@ try:
                     cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
                     id, conf = rec.predict(gray[y:y+h, x:x+w])
                     confStr = "{0:.2f}".format(100-conf)
+                    
+                    if(inputValue == False):
+                        pygame.mixer.music.load("bell.mp3")
+                        pygame.mixer.music.play()
+##                        while pygame.mixer.music.get_busy() == True:
+##                            continue
                     
                     #button activated
                     if(inputValue == False and strangerDetected):
@@ -396,4 +428,4 @@ except KeyboardInterrupt:
             
 finally:
 	GPIO.cleanup()
-	socketIO.wait()
+	
